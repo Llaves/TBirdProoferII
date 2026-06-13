@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Add New Prompt</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      h1 {
+        text-align: center;
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 10px;
+        margin-bottom: 20px;
+        resize: vertical;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+      }
+      .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      #saveButton {
+        background-color: #4CAF50;
+        color: white;
+        border-color: #45a049;
+      }
+      #cancelButton {
+        background-color: #f1f1f1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Add New Prompt</h1>
+    <textarea id="newPromptText" placeholder="Enter your prompt here..."></textarea>
+    <div class="button-group">
+      <button id="saveButton">Save</button>
+      <button id="cancelButton">Cancel</button>
+    </div>
+    <script src="add_prompt.js"></script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Key</title>
+    <style>
+      body { 
+        font-family: Arial, sans-serif; 
+        padding: 20px; 
+        text-align: center; 
+      }
+      h1 { 
+        font-size: 18px; 
+        color: #555; 
+        margin-bottom: 15px; 
+      }
+      .key-block {
+        word-break: break-all; 
+        background-color: #f9f9f9; 
+        border: 1px solid #ddd; 
+        padding: 10px; 
+        margin: 0 auto 20px auto; 
+        max-width: 300px; 
+        font-family: monospace;
+      }
+      .key-label {
+        font-weight: bold;
+        margin-bottom: 6px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Heading is set dynamically by view_key.js -->
+    <h1 id="heading">Loading...</h1>
+
+    <!-- Single-provider view (used when ?provider= param is present) -->
+    <div id="singleView">
+      <div class="key-block" id="apiKey">Loading...</div>
+    </div>
+
+    <!-- Both-providers fallback view (used when no ?provider= param) -->
+    <div id="bothView" style="display:none">
+      <div class="key-label">Google Gemini API Key</div>
+      <div class="key-block" id="geminiKey">Loading...</div>
+      <div class="key-label">OpenRouter API Key</div>
+      <div class="key-block" id="openrouterKey">Loading...</div>
+    </div>
+
+    <script src="view_key.js"></script>
+  </body>
+</html>

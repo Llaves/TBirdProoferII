@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Manage Prompts</title>
+    <style>
+      h1 { text-align: center; }
+      body { 
+        font-family: Arial, sans-serif; 
+        padding: 20px; 
+        text-align: center;
+      }
+      #prompt-container { 
+        text-align: center;
+        border: 1px solid #ddd; 
+        margin-bottom: 25px; 
+        padding: 10px; 
+        word-wrap: break-word;
+      }
+      .selected { 
+        background-color: #e0ffe0; 
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Manage Prompts</h1>
+    <div>The current selection is highlighted</div><br>
+    <div id="promptsContainer">
+      <!-- Prompts will be inserted here by JavaScript -->
+    </div>
+    <button id="newPromptButton">New Prompt</button>
+    <script src="manage_prompts.js"></script>
+  </body>
+</html>
