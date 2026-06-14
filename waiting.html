@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Waiting...</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      h1 { font-size: 18px; color: #555; }
+      p  { font-size: 16px; color: #333; }
+
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #ddd;
+        border-top-color: #4a90d9;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+        margin: 16px auto;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <p id="proofingMessage"></p>
+    <div class="spinner"></div>
+    <h1 id="modelMessage"></h1>
+    <script src="waiting.js"></script>
+  </body>
+</html>

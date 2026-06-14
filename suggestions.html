@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Proofread Suggestions</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 16px;
+        line-height: 1.6;
+        margin: 0;
+      }
+      h1 { font-size: 16px; margin-top: 0; color: #333; }
+      #preview {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 12px;
+        background: #fafafa;
+        min-height: 80px;
+        margin-bottom: 12px;
+      }
+      /* spans carry inline styles from the LLM, no fallback rules needed —
+      but keep these in case an older response used del/ins tags */
+      #preview del { color: #cc0000; text-decoration: line-through; }
+      #preview ins { color: #007700; text-decoration: underline; }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      button {
+        padding: 6px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid #999;
+        border-radius: 3px;
+        background: #f0f0f0;
+      }
+      button:hover { background: #e0e0e0; }
+      #copyMsg {
+        font-size: 12px;
+        color: #007700;
+        display: none;
+        align-self: center;
+      }
+      #rawBox {
+        width: 100%;
+        height: 140px;
+        font-family: monospace;
+        font-size: 11px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px;
+        display: none;
+        resize: vertical;
+      }
+      label { font-size: 12px; color: #555; }
+    </style>
+  </head>
+  <body>
+    <h1>Proofreading Suggestions</h1>
+    <div class="toolbar">
+      <button id="btnCopyHtml">Copy corrected HTML</button>
+      <button id="btnToggleRaw">Show raw HTML</button>
+      <span id="copyMsg">Copied!</span>
+    </div>
+    <div id="preview"></div>
+    <label for="rawBox">Raw HTML (select all &amp; copy to paste into composer):</label>
+    <textarea id="rawBox" readonly></textarea>
+    <script src="suggestions.js"></script>
+  </body>
+</html>

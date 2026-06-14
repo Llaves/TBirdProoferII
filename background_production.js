@@ -43,49 +43,66 @@ browser.browserAction.onClicked.addListener(() => {
   openSettingsPopup();
 });
 
-// Build the system prompt for HTML tracked-changes proofreading.
-function buildHtmlProofPrompt(userStyleInstruction) {
-  return `You are a proofreading assistant. The user will send you an HTML email fragment.
-
-Your task:
-1. Apply the following style/grammar instructions to the content: ${userStyleInstruction}
-2. Return ONLY the corrected HTML fragment with tracked changes marked up as follows:
-   - Removed text: wrap in <span style="color:#cc0000;text-decoration:line-through;">...</span>
-   - Added/replacement text: wrap in <span style="color:#007700;text-decoration:underline;">...</span>
-   - Unchanged text and HTML structure: leave exactly as-is
-
-Rules you MUST follow:
-- Do NOT wrap your response in markdown code fences or any other wrapper.
-- Do NOT add any explanation, preamble, or commentary — output only the HTML fragment.
-- Preserve all existing HTML tags, attributes, and structure exactly.
-- Only modify the text nodes where corrections are needed.
-- For a replacement, ALWAYS emit the correction first, then the deleted original:
-  <span style="color:#007700;text-decoration:underline;">new word</span><span style="color:#cc0000;font-style:normal;text-decoration:line-through;">old word</span>
-- Between the two spans, always insert a reset span to prevent style bleed:
-  <span style="color:inherit;text-decoration:none;"> </span>
-- If text is only deleted (no replacement), emit:
-  <span style="color:#cc0000;text-decoration:line-through;">deleted text</span>
-- If text is only inserted, emit:
-  <span style="color:#007700;text-decoration:underline;">new text</span>`;
+// Function to decode HTML entities
+function decodeHTML(html) {
+  const textArea = document.createElement("textarea");
+  textArea.innerHTML = html;
+  return textArea.value;
 }
 
-// Show the suggestions popup.
-// Stores the corrected HTML in local storage so suggestions.js can read it
-// (avoids CSP issues with inline scripts and URL length limits).
-async function showSuggestionsPopup(correctedHtml) {
-  await browser.storage.local.set({ pendingSuggestions: correctedHtml });
+// Function to show the suggestions popup
+function showSuggestionsPopup(suggestions) {
+  const blob = new Blob([
+    `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Proofread Suggestions</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 10px; line-height: 1.5; }
+          h1 { font-size: 18px; }
+          pre { white-space: pre-wrap; word-wrap: break-word; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
+        </style>
+        <meta http-equiv="content-type" content="text/html,charset=utf-8" />
+      </head>
+      <body>
+        <h1>Proofreading Suggestions</h1>
+        <pre>${suggestions}</pre>
+      </body>
+    </html>`
+  ], { type: "text/html" });
+
+  const url = URL.createObjectURL(blob);
   browser.windows.create({
-    url: "suggestions.html",
+    url,
     type: "popup",
     width: 1000,
-    height: 700
+    height: 1000
   });
 }
 
-// Show the waiting popup, passing model info via URL query params.
+// Function to show the waiting popup, including the active model name
 function showWaitingPopup(isFullMessage, model) {
-  const message = isFullMessage ? "Proofing message" : "Proofing selection";
-  const url = `waiting.html?message=${encodeURIComponent(message)}&model=${encodeURIComponent(model)}`;
+  const proofingMessage = isFullMessage ? "Proofing message" : "Proofing selection";
+
+  const blob = new Blob([
+    `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Waiting...</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+          h1 { font-size: 18px; color: #555; }
+          p { font-size: 16px; color: #333; }
+        </style>
+      </head>
+      <body>
+        <p>${proofingMessage}</p>
+        <h1>Waiting for response from ${model}...</h1>
+      </body>
+    </html>`
+  ], { type: "text/html" });
+
+  const url = URL.createObjectURL(blob);
   return browser.windows.create({
     url,
     type: "popup",
@@ -94,9 +111,27 @@ function showWaitingPopup(isFullMessage, model) {
   }).then(windowInfo => windowInfo.id);
 }
 
-// Show the error popup, passing the message via URL query params.
+// Function to show the error popup
 function showErrorPopup(message) {
-  const url = `error.html?message=${encodeURIComponent(message)}`;
+  const blob = new Blob([
+    `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Error</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; text-align: center; color: #b00; }
+          h1 { font-size: 20px; margin-bottom: 10px; }
+          p { font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <h1>Error</h1>
+        <p>${message}</p>
+      </body>
+    </html>`
+  ], { type: "text/html" });
+
+  const url = URL.createObjectURL(blob);
   browser.windows.create({
     url,
     type: "popup",
@@ -106,14 +141,12 @@ function showErrorPopup(message) {
 }
 
 // Calls the Google Gemini API and returns the response text.
-async function callGemini(apiKey, model, systemPrompt, textToProof) {
+// Throws on non-OK HTTP responses or network failures.
+async function callGemini(apiKey, model, selectedPrompt, textToProof) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const payload = {
-    system_instruction: {
-      parts: [{ text: systemPrompt }]
-    },
     contents: [{
-      parts: [{ text: textToProof }]
+      parts: [{ text: `${selectedPrompt}\n\n${textToProof}` }]
     }]
   };
 
@@ -139,12 +172,13 @@ async function callGemini(apiKey, model, systemPrompt, textToProof) {
 }
 
 // Calls the OpenRouter API and returns the response text.
-async function callOpenRouter(apiKey, model, systemPrompt, textToProof) {
+// Throws on non-OK HTTP responses or network failures.
+async function callOpenRouter(apiKey, model, selectedPrompt, textToProof) {
   const endpoint = "https://openrouter.ai/api/v1/chat/completions";
   const payload = {
     model,
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: selectedPrompt },
       { role: "user",   content: textToProof },
     ],
   };
@@ -181,14 +215,6 @@ async function callOpenRouter(apiKey, model, systemPrompt, textToProof) {
   });
 }
 
-// Strips markdown code fences that some LLMs add despite being told not to.
-function stripCodeFences(text) {
-  return text
-    .replace(/^```[a-zA-Z]*\r?\n/, "")
-    .replace(/\r?\n```$/, "")
-    .trim();
-}
-
 // Listener for compose action clicks
 messenger.composeAction.onClicked.addListener(async (tab) => {
   let waitingPopupId = null;
@@ -205,53 +231,43 @@ messenger.composeAction.onClicked.addListener(async (tab) => {
     let textToProof = composeDetails.body;
     let isFullMessage = true;
 
-    // Try to get the HTML of the selected region inside the compose iframe.
+    // Try to get the selected text
     try {
       const results = await messenger.tabs.executeScript(tab.id, {
         code: `(function() {
-          const sel = window.getSelection();
-          if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
-
-          const range = sel.getRangeAt(0);
-          const fragment = range.cloneContents();
-
-          const container = document.createElement('div');
-          container.appendChild(fragment);
-          const html = container.innerHTML.trim();
-
-          return html.length > 0 ? html : null;
+          const selection = window.getSelection().toString();
+          return selection.trim();
         })();`
       });
 
-      if (results && results[0]) {
+      if (results && results[0] && results[0].length > 0) {
         textToProof = results[0];
         isFullMessage = false;
       }
     } catch (error) {
-      console.warn("Error getting HTML selection. Using full message.", error);
+      console.warn("Error getting selection. Using full message.", error);
     }
 
     // Get saved prompts
     const { savedPrompts = [], selectedPromptIndex = -1 } = await browser.storage.local.get(["savedPrompts", "selectedPromptIndex"]);
-    const userStyleInstruction = savedPrompts[selectedPromptIndex] || "Correct grammar, spelling, punctuation, and style.";
+    const selected_prompt = savedPrompts[selectedPromptIndex] || "Correct grammar, spelling, punctuation, and style.";
 
-    const systemPrompt = buildHtmlProofPrompt(userStyleInstruction);
-
+    // Show waiting popup with dynamic model name
     waitingPopupId = await showWaitingPopup(isFullMessage, model);
 
     try {
-      let rawResponse;
+      let suggestions;
 
       if (provider === "gemini") {
-        rawResponse = await callGemini(apiKey, model, systemPrompt, textToProof);
+        suggestions = await callGemini(apiKey, model, selected_prompt, textToProof);
       } else if (provider === "openrouter") {
-        rawResponse = await callOpenRouter(apiKey, model, systemPrompt, textToProof);
+        suggestions = await callOpenRouter(apiKey, model, selected_prompt, textToProof);
       } else {
         throw new Error(`Unknown provider: ${provider}`);
       }
 
-      const correctedHtml = stripCodeFences(rawResponse);
-      await showSuggestionsPopup(correctedHtml);
+      const decodedSuggestions = decodeHTML(suggestions);
+      showSuggestionsPopup(decodedSuggestions);
 
     } catch (apiError) {
       console.error("Error contacting API:", apiError);

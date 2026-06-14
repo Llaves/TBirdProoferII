@@ -1,11 +1,11 @@
 {
   "manifest_version": 2,
   "name": "LLM Proofreader",
-  "version": "2.0",
-   "icons": {
-    "16":  "icon16.png",
-    "32":  "con32.png",
-    "48":  "icon48.png"
+  "version": "2.1",
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png"
   },
   "description": "An extension to proofread emails using multiple LLM providers (Google Gemini, OpenRouter).",
   "background": {
@@ -41,6 +41,12 @@
     "add_prompt.html",
     "add_prompt.js",
     "view_key.html",
-    "view_key.js"
+    "view_key.js",
+    "suggestions.html",
+    "suggestions.js",
+    "waiting.html",
+    "waiting.js",
+    "error.html",
+    "error.js"
   ]
 }
