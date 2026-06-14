@@ -6,7 +6,8 @@
 async function getActiveConfig() {
   const stored = await browser.storage.local.get([
     "provider",
-    "model",
+    "gemini_model",
+    "openrouter_model",
     "geminiApiKey",
     "openrouterApiKey",
     "apiKey", // v1 legacy key
@@ -20,7 +21,9 @@ async function getActiveConfig() {
   }
 
   const provider = stored.provider || "gemini";
-  const model = stored.model || (provider === "gemini" ? "gemini-2.5-flash" : "anthropic/claude-sonnet-4-5");
+  const modelKey = provider + "_model";
+  const defaultModel = provider === "gemini" ? "gemini-2.5-flash" : "anthropic/claude-sonnet-4-5";
+  const model = stored[modelKey] || defaultModel;
   const apiKey = provider === "openrouter" ? stored.openrouterApiKey : stored.geminiApiKey;
 
   return { provider, model, apiKey };
@@ -171,7 +174,6 @@ async function callGemini(apiKey, model, selectedPrompt, textToProof) {
 // Calls the OpenRouter API and returns the response text.
 // Throws on non-OK HTTP responses or network failures.
 async function callOpenRouter(apiKey, model, selectedPrompt, textToProof) {
-  console.error("DEBUG callOpenRouter — apiKey:", JSON.stringify(apiKey), "model:", model);
   const endpoint = "https://openrouter.ai/api/v1/chat/completions";
   const payload = {
     model,

@@ -1,10 +1,10 @@
 const PROVIDERS = {
   gemini: {
     label: "Google Gemini",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.5-flash",
     // Model name and API key go in the URL; request/response shape is Gemini-specific.
     endpoint: (apiKey, model) =>
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${gemini_model}:generateContent?key=${apiKey}`,
   },
   openrouter: {
     label: "OpenRouter",

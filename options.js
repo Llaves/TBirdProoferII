@@ -51,7 +51,8 @@ function updateKeyStatus(provider, isSet) {
 document.addEventListener("DOMContentLoaded", async () => {
   const result = await browser.storage.local.get([
     "provider",
-    "model",
+    "gemini_model",
+    "openrouter_model",
     "geminiApiKey",
     "openrouterApiKey",
     "apiKey", // v1 legacy key
@@ -74,7 +75,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // --- Set model name ---
   const modelInput = document.getElementById("modelName");
-  modelInput.value = result.model || PROVIDERS[storedProvider].defaultModel;
+  const modelKey = storedProvider + "_model";
+  modelInput.value = result[modelKey] || PROVIDERS[storedProvider].defaultModel;
   updateModelHint(storedProvider);
   updateProviderVisibility(storedProvider)
 
@@ -103,16 +105,9 @@ document.querySelectorAll('input[name="provider"]').forEach((radio) => {
 
     // Update model field only if it's blank or still showing the other provider's default
     const modelInput = document.getElementById("modelName");
-    const currentValue = modelInput.value.trim();
-    const otherProvider = newProvider === "gemini" ? "openrouter" : "gemini";
-    const isBlankOrOtherDefault =
-      currentValue === "" || currentValue === PROVIDERS[otherProvider].defaultModel;
-
-    if (isBlankOrOtherDefault) {
-      // Load stored model for new provider, falling back to its default
-      const result = await browser.storage.local.get("model");
-      modelInput.value = result.model || PROVIDERS[newProvider].defaultModel;
-    }
+    const modelKey = newProvider + "_model";
+    const result = await browser.storage.local.get(modelKey);
+    modelInput.value = result[modelKey] || PROVIDERS[newProvider].defaultModel;
   });
 });
 
@@ -126,7 +121,8 @@ document.getElementById("saveModelButton").addEventListener("click", async () =>
     setOutput("Model name cannot be empty.");
     return;
   }
-  await browser.storage.local.set({ model });
+  const provider = getSelectedProvider();
+  await browser.storage.local.set({ [provider + "_model"]: model });
   setOutput(`Model saved: ${model}`);
 });
 
@@ -204,10 +200,4 @@ document.getElementById("promptsButton").addEventListener("click", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Close on blur (unchanged)
-// ---------------------------------------------------------------------------
 
-window.addEventListener("blur", () => {
-  window.close();
-});
