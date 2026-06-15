@@ -44,8 +44,23 @@ browser.browserAction.onClicked.addListener(() => {
 });
 
 // Build the system prompt for HTML tracked-changes proofreading.
-function buildHtmlProofPrompt(userStyleInstruction) {
-  return `You are a proofreading assistant. The user will send you an HTML email fragment.
+function buildHtmlProofPrompt(userStyleInstruction, mode = "diff") {
+  if (mode === "diff") {
+    return `You are a proofreading assistant.The user will send you an HTML email fragment.
+
+Task:
+   1. ${userStyleInstruction}
+   2. For every correction needed, identify the specific sentence containing the error.
+   3. Return ONLY a list of the corrected sentences. Do NOT return the full HTML fragment or any surrounding code.
+Formatting Rules:
+    For each correction, output the sentence containing the change, with the correction marked using your markup rules:
+        Removed text: <span style="color:#cc0000;text-decoration:line-through;">old word</span>
+        Added/replacement text: <span style="color:#007700;text-decoration:underline;">new word</span>
+        If replacing: Use the format: <span style="color:#007700;text-decoration:underline;">new</span><span style="color:inherit;text-decoration:none;"> </span><span style="color:#cc0000;font-style:normal;text-decoration:line-through;">old</span>
+        Ensure each sentence is on its own line and wrapped in its own <p> tag.
+    Do NOT include any preamble, commentary, or markdown code fences.`
+  }
+ return `You are a proofreading assistant. The user will send you an HTML email fragment.
 
 Your task:
 1. Apply the following style/grammar instructions to the content: ${userStyleInstruction}
@@ -67,8 +82,8 @@ Rules you MUST follow:
   <span style="color:#cc0000;text-decoration:line-through;">deleted text</span>
 - If text is only inserted, emit:
   <span style="color:#007700;text-decoration:underline;">new text</span>`;
-}
 
+}
 // Show the suggestions popup.
 // Stores the corrected HTML in local storage so suggestions.js can read it
 // (avoids CSP issues with inline scripts and URL length limits).
@@ -108,6 +123,7 @@ function showErrorPopup(message) {
 // Calls the Google Gemini API and returns the response text.
 async function callGemini(apiKey, model, systemPrompt, textToProof) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  console.log("Calling Gemini API with prompt:", systemPrompt);
   const payload = {
     system_instruction: {
       parts: [{ text: systemPrompt }]
@@ -233,9 +249,11 @@ messenger.composeAction.onClicked.addListener(async (tab) => {
 
     // Get saved prompts
     const { savedPrompts = [], selectedPromptIndex = -1 } = await browser.storage.local.get(["savedPrompts", "selectedPromptIndex"]);
-    const userStyleInstruction = savedPrompts[selectedPromptIndex] || "Correct grammar, spelling, punctuation, and style.";
-
-    const systemPrompt = buildHtmlProofPrompt(userStyleInstruction);
+    const selectedPrompt = savedPrompts[selectedPromptIndex];
+    const userStyleInstruction = selectedPrompt.text || "Correct grammar, spelling, punctuation, and style.";
+    const mode = selectedPrompt.mode; // "diff" or "rewrite"
+   
+    const systemPrompt = buildHtmlProofPrompt(userStyleInstruction, mode);
 
     waitingPopupId = await showWaitingPopup(isFullMessage, model);
 

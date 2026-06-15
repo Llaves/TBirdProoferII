@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   saveButton.addEventListener('click', async () => {
     const promptText = newPromptText.value.trim();
-    
+
     if (!promptText) {
       alert('Please enter a prompt before saving.');
       return;
@@ -30,13 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const { savedPrompts = [] } = await browser.storage.local.get('savedPrompts');
 
     if (isEditMode) {
-      // Overwrite the existing prompt in place
-      savedPrompts[editIndex] = promptText;
+      // Preserve the existing mode — only update the text
+      const existing = savedPrompts[editIndex];
+      const existingMode = (existing && typeof existing === 'object') ? existing.mode : 'diff';
+      savedPrompts[editIndex] = { text: promptText, mode: existingMode };
       await browser.storage.local.set({ savedPrompts });
       browser.runtime.sendMessage({ action: 'promptEdited', selectedIndex: editIndex });
     } else {
-      // Append as a new prompt and select it
-      savedPrompts.push(promptText);
+      // New prompts default to diff mode
+      savedPrompts.push({ text: promptText, mode: 'diff' });
       const selectedIndex = savedPrompts.length - 1;
       await browser.storage.local.set({ savedPrompts });
       browser.runtime.sendMessage({ action: 'promptAdded', selectedIndex });
